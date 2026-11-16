@@ -35,7 +35,7 @@ section{padding:30px 0}h2{font-size:24px;margin:0 0 6px}.sub{color:var(--mut);ma
 #stage{position:relative;width:100%;user-select:none;-webkit-user-select:none}#stage img{display:block;width:100%;pointer-events:none}
 .sec{position:absolute;border:1.5px solid #6fdc8c;pointer-events:none}.sec.d{border-color:var(--amber)}
 .sec span{position:absolute;top:-20px;left:-2px;background:#000b;color:#6fdc8c;font:700 12px system-ui;padding:1px 6px;white-space:nowrap}
-.dot{position:absolute;width:7px;height:7px;margin:-3.5px;border-radius:50%;background:var(--green);pointer-events:none}.dot.e{width:12px;height:12px;margin:-6px;box-shadow:0 0 0 1.5px #000a}.dot.m{background:var(--amber)}
+.dot{position:absolute;width:10px;height:10px;margin:-5px;box-shadow:0 0 0 1.5px #000a;border-radius:50%;background:var(--green);pointer-events:none}.dot.e{width:13px;height:13px;margin:-6.5px}.dot.m{background:var(--amber)}
 .bar{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}.bar .btn{flex:1;min-width:130px}
 .info{color:var(--mut);font-size:14px;margin:8px 0}
 table{width:100%;border-collapse:collapse;margin-top:8px}td,th{padding:10px 6px;border-bottom:1px solid var(--line);text-align:right}td:first-child,th:first-child{text-align:left}.tot{font-weight:800;color:var(--amber)}
@@ -79,7 +79,7 @@ nav a{white-space:nowrap}
 <section id="app"><div class="wrap">
 <h2>Contador</h2><p class="sub">Todo ocurre en tu dispositivo. Las fotos no se suben a ningún servidor.</p>
 <div class="ctl"><select id="mat" aria-label="Material"></select></div>
-<div class="seg"><button id="m1" class="on">Por secciones</button><button id="m2">1 por 1</button></div>
+<div class="seg"><button id="m1">Por secciones</button><button id="m2" class="on">Clic en tuberías</button></div>
 <div id="banner">Sube una foto del rack para empezar.</div>
 <label id="drop" for="file">📷<br>Toca para subir la foto del rack</label>
 <input id="file" type="file" accept="image/*" hidden>
@@ -118,70 +118,73 @@ const save=()=>{try{localStorage.setItem(LS,JSON.stringify(DB))}catch(e){}};
 const newP=()=>({rs:[],ps:[],ns:[],sg:[],r:0,thr:.12,nms:1.5,sign:1});
 const P=()=>DB.profiles[DB.active]||(DB.profiles[DB.active]=newP());
 const med=a=>{const s=[...a].sort((x,y)=>x-y);return s.length?s[s.length>>1]:0},pct=(a,q)=>{const s=[...a].sort((x,y)=>x-y);return s.length?s[Math.min(s.length-1,Math.floor(q*s.length))]:0};
-const S={mode:'sec',rect:null,d:null,secs:[],done:false,zoom:1,blob:null,name:''};
+const S={mode:'one',rect:null,d:null,secs:[],done:false,zoom:1,blob:null,name:''};
 let IM=null,N=0;
 
-/* ---------- imagen y respuesta de boca de tubería ---------- */
+/* ---------- imagen y detector de bocas ---------- */
 function prep(img){
   const m=Math.min(1,1400/Math.max(img.naturalWidth,img.naturalHeight)),W=Math.round(img.naturalWidth*m),H=Math.round(img.naturalHeight*m);
   const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(img,0,0,W,H);
-  const d=x.getImageData(0,0,W,H).data,s=W+1,I=new Float64Array(s*(H+1));
-  for(let y=0;y<H;y++){let row=0;for(let k=0;k<W;k++){const i=(y*W+k)*4;row+=.299*d[i]+.587*d[i+1]+.114*d[i+2];I[(y+1)*s+k+1]=I[y*s+k+1]+row}}
-  IM={W,H,I,nw:img.naturalWidth,nh:img.naturalHeight};
+  const d=x.getImageData(0,0,W,H).data,g=new Uint8Array(W*H);
+  for(let i=0;i<W*H;i++)g[i]=.299*d[i*4]+.587*d[i*4+1]+.114*d[i*4+2];
+  IM={W,H,g,nw:img.naturalWidth,nh:img.naturalHeight};
 }
-function bs(x,y,h){const x0=Math.round(x-h),y0=Math.round(y-h),x1=Math.round(x+h),y1=Math.round(y+h),s=IM.W+1,I=IM.I;N=(x1-x0)*(y1-y0);return I[y1*s+x1]-I[y0*s+x1]-I[y1*s+x0]+I[y0*s+x0]}
-function resp(x,y,r,sg){
-  const c=1.2*r;if(r<3||x<c+1||y<c+1||x+c>=IM.W-1||y+c>=IM.H-1)return -9;
-  const sa=bs(x,y,.45*r),na=N,sb=bs(x,y,.8*r),nb=N,sc=bs(x,y,c),nc=N;
-  if(na<=0||nc-nb<=0)return -9;return sg*((sc-sb)/(nc-nb)-sa/na)/255;
+function dtrans(m,W,H){
+  const D=new Float32Array(W*H),INF=1e9;
+  for(let i=0;i<W*H;i++)D[i]=m[i]?INF:0;
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=y*W+x;if(!D[i])continue;let v=D[i];
+    if(x>0)v=Math.min(v,D[i-1]+1);if(y>0){v=Math.min(v,D[i-W]+1);if(x>0)v=Math.min(v,D[i-W-1]+1.414);if(x<W-1)v=Math.min(v,D[i-W+1]+1.414)}D[i]=v}
+  for(let y=H-1;y>=0;y--)for(let x=W-1;x>=0;x--){const i=y*W+x;if(!D[i])continue;let v=D[i];
+    if(x<W-1)v=Math.min(v,D[i+1]+1);if(y<H-1){v=Math.min(v,D[i+W]+1);if(x<W-1)v=Math.min(v,D[i+W+1]+1.414);if(x>0)v=Math.min(v,D[i+W-1]+1.414)}D[i]=v}
+  return D;
 }
-function range(){const p=P();return p.rs.length>=3?[.6*med(p.rs)*IM.W,1.5*med(p.rs)*IM.W,5]:[.008*IM.W,.08*IM.W,8]}
-function best(x,y,lo,hi,win,sgs){
-  let b={v:-9};const K=5;
-  for(let k=0;k<K;k++){const r=lo*Math.pow(hi/lo,k/(K-1)),st=Math.max(1,Math.round(r/5));
-    for(let dy=-win;dy<=win;dy+=st)for(let dx=-win;dx<=win;dx+=st)for(const sg of sgs){const v=resp(x+dx,y+dy,r,sg);if(v>b.v)b={v,x:x+dx,y:y+dy,r,sg}}}
-  return b;
+/* boca = zona oscura; el centro es el máximo de la transformada de distancia; crestas sin valle = una sola tubería rectangular */
+function peaks(box,T,rmin){
+  const W=IM.W,H=IM.H,g=IM.g,x0=Math.max(1,box.x0|0),y0=Math.max(1,box.y0|0),x1=Math.min(W-1,box.x1|0),y1=Math.min(H-1,box.y1|0),w=x1-x0,h=y1-y0;
+  if(w<8||h<8)return[];const m=new Uint8Array(w*h);
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++)m[y*w+x]=g[(y+y0)*W+x+x0]<T?1:0;
+  const D=dtrans(m,w,h),c=[];
+  for(let y=2;y<h-2;y++)for(let x=2;x<w-2;x++){const v=D[y*w+x];if(v<rmin)continue;
+    let ok=true;for(let dy=-2;dy<=2&&ok;dy++)for(let dx=-2;dx<=2;dx++)if(D[(y+dy)*w+x+dx]>v){ok=false;break}
+    if(ok)c.push({x:x+x0,y:y+y0,r:v})}
+  c.sort((a,b)=>b.r-a.r);const P=[];
+  for(const q of c){if(P.some(p=>Math.hypot(p.x-q.x,p.y-q.y)<.9*p.r))continue;P.push(q)}
+  const par=P.map((_,i)=>i),f=i=>par[i]===i?i:(par[i]=f(par[i]));
+  for(let i=0;i<P.length;i++)for(let j=i+1;j<P.length;j++){const a=P[i],b=P[j],d=Math.hypot(a.x-b.x,a.y-b.y);
+    if(d>5*Math.max(a.r,b.r))continue;const n=Math.ceil(d),mn=Math.min(a.r,b.r);let lo=1e9;
+    for(let k=0;k<=n;k++){const x=Math.round(a.x+(b.x-a.x)*k/n),y=Math.round(a.y+(b.y-a.y)*k/n);lo=Math.min(lo,D[(y-y0)*w+x-x0])}
+    if(lo>=.8*mn)par[f(j)]=f(i)}
+  const G={};P.forEach((p,i)=>{(G[f(i)]=G[f(i)]||[]).push(p)});
+  return Object.values(G).map(a=>({x:a.reduce((s,p)=>s+p.x,0)/a.length,y:a.reduce((s,p)=>s+p.y,0)/a.length,r:Math.max(...a.map(p=>p.r))}));
 }
-const sgs=()=>P().rs.length>=3?[P().sign]:[1,-1];
-
-/* ---------- detección automática ---------- */
+/* aprende de un clic: umbral de oscuridad y tamaño de la boca */
+function calib(x,y){
+  const W=IM.W,H=IM.H,g=IM.g,px=Math.round(x*W),py=Math.round(y*H),R=Math.round(.05*W);let g0=255;
+  for(let dy=-3;dy<=3;dy++)for(let dx=-3;dx<=3;dx++){const X=px+dx,Y=py+dy;if(X>=0&&Y>=0&&X<W&&Y<H)g0=Math.min(g0,g[Y*W+X])}
+  const T=Math.min(130,Math.max(45,g0+35)),P=peaks({x0:px-R,y0:py-R,x1:px+R,y1:py+R},T,3);
+  let b=null,bd=1e9;for(const q of P){const d=Math.hypot(q.x-px,q.y-py);if(d<bd){bd=d;b=q}}
+  return b&&bd<2.5*b.r?{T,r:b.r,x:b.x/W,y:b.y/H}:null;
+}
+function params(){
+  const c=(S.d&&S.d.cal)||[];if(c.length)return{T:med(c.map(a=>a.T)),r:med(c.map(a=>a.r))};
+  const p=P();if(p.ts&&p.ts.length&&p.rs.length)return{T:med(p.ts),r:med(p.rs)*IM.W};
+  return{T:70,r:0};
+}
 function detect(rc,existing){
-  const p=P(),[lo,hi,K]=range(),W=IM.W,H=IM.H;
-  const x0=rc.x*W,y0=rc.y*H,x1=(rc.x+rc.w)*W,y1=(rc.y+rc.h)*H,st=Math.max(2,Math.round(lo/4)),thr=p.thr,cand=[];
-  for(let y=y0;y<y1;y+=st)for(let x=x0;x<x1;x+=st){
-    let bv=-9,br=0;for(let k=0;k<K;k++){const r=lo*Math.pow(hi/lo,k/(K-1)),v=resp(x,y,r,p.sign);if(v>bv){bv=v;br=r}}
-    if(bv>.6*thr)cand.push({x,y,r:br,v:bv});
-  }
-  cand.sort((a,b)=>b.v-a.v);const acc=[];
-  for(const c of cand){
-    if(acc.some(a=>Math.hypot(a.x-c.x,a.y-c.y)<p.nms*Math.min(a.r,c.r)))continue;
-    if(existing.some(e=>Math.hypot(e.x*W-c.x,e.y*H-c.y)<1.1*c.r))continue;
-    acc.push(c);
-  }
-  const pts=[],dbt=[];
-  for(const a of acc){
-    const b=best(a.x,a.y,a.r*.9,a.r*1.1,st,[p.sign]);const q=b.v>-9?b:a;
-    if(q.x<x0||q.x>x1||q.y<y0||q.y>y1)continue;
-    (a.v>=thr?pts:dbt).push({x:q.x/W,y:q.y/H,src:'auto'});
+  const W=IM.W,H=IM.H,{T,r}=params(),pts=[],dbt=[];
+  const box={x0:rc.x*W,y0:rc.y*H,x1:(rc.x+rc.w)*W,y1:(rc.y+rc.h)*H};
+  for(const q of peaks(box,T,r?Math.max(3,.5*r):4)){
+    if(existing.some(e=>Math.hypot(e.x*W-q.x,e.y*H-q.y)<Math.max(q.r,4)))continue;
+    if(r&&q.r>1.8*r)continue;
+    (!r||(q.r>=.7*r&&q.r<=1.4*r)?pts:dbt).push({x:q.x/W,y:q.y/H,src:'auto'});
   }
   return{pts,dbt};
 }
-
-/* ---------- aprendizaje ---------- */
-function learn(pos,neg){
-  const p=P(),W=IM.W,H=IM.H,[lo,hi]=range();
-  for(const q of pos){const b=best(q.x*W,q.y*H,lo,hi,Math.round(lo/3),sgs());if(b.v>0){p.rs.push(b.r/W);p.ps.push(b.v);p.sg.push(b.sg)}}
-  if(p.rs.length){const r=med(p.rs)*W;for(const q of neg){const b=best(q.x*W,q.y*H,.7*r,1.4*r,2,[p.sign]);if(b.v>-9)p.ns.push(b.v)}}
-  for(const k of['rs','ps','ns','sg'])if(p[k].length>400)p[k]=p[k].slice(-400);
-  recalc(p,pos.length>5?pos:null);
-}
-function recalc(p,pos){
-  if(!p.sg.length)return;
-  p.sign=p.sg.filter(s=>s>0).length>=p.sg.length/2?1:-1;
-  const lowP=pct(p.ps,.2);p.thr=Math.max(.03,.8*lowP);
-  if(p.ns.length>=3){const hn=pct(p.ns,.75);if(hn<lowP)p.thr=(hn+lowP)/2}
-  if(pos){const W=IM.W,r=med(p.rs)*W,nn=pos.map((a,i)=>Math.min(...pos.map((b,j)=>i===j?1e9:Math.hypot((a.x-b.x)*W,(a.y-b.y)*IM.H))));
-    if(r>0)p.nms=Math.min(1.7,Math.max(1,.8*med(nn)/r))}
+function learn(pos){
+  const p=P(),c=(S.d&&S.d.cal)||[];if(!c.length)return;p.ts=p.ts||[];
+  p.rs.push(med(c.map(a=>a.r))/IM.W);p.ts.push(med(c.map(a=>a.T)));
+  for(let i=0;i<pos.length;i++)p.ps.push(1);
+  for(const k of['rs','ts'])if(p[k].length>60)p[k]=p[k].slice(-60);if(p.ps.length>5000)p.ps=p.ps.slice(-5000);
 }
 
 /* ---------- interfaz ---------- */
@@ -191,7 +194,7 @@ const msg=t=>$('#banner').textContent=t;
 function mats(){const m=$('#mat');m.innerHTML=Object.keys({General:1,...DB.profiles}).map(k=>`<option ${k===DB.active?'selected':''}>${k}</option>`).join('')+'<option value="__n">＋ Nuevo material…</option>'}
 $('#mat').onchange=e=>{if(e.target.value==='__n'){const n=(prompt('Nombre del material (ej. Cuadrado 50x50)')||'').trim();if(n)DB.active=n}else DB.active=e.target.value;save();mats();stats()};
 function setMode(m){S.mode=m;$('#m1').classList.toggle('on',m==='sec');$('#m2').classList.toggle('on',m==='one');
-  msg(m==='sec'?'Arrastra sobre la foto para marcar la sección.':'Toca cada tubería. Con 3 toques la app calibra el tamaño; luego usa Auto-completar.');render()}
+  msg(m==='sec'?'Arrastra sobre la foto para marcar la sección y pulsa Detectar.':'Toca el centro de 3 bocas para que la app aprenda su tamaño; luego pulsa Auto-completar y corrige tocando.');render()}
 $('#m1').onclick=()=>setMode('sec');$('#m2').onclick=()=>setMode('one');
 
 $('#file').onchange=e=>{
@@ -214,7 +217,7 @@ st.addEventListener('pointerup',e=>{if(!drag)return;const d=drag;drag=null;
   if(!d.moved)tap(d.p)});
 st.addEventListener('pointercancel',()=>drag=null);
 
-function newDraft(){S.d={pts:[],dbt:[],removed:[],auto:0,added:0,prom:0};if(!S.rect)S.rect={x:0,y:0,w:1,h:1}}
+function newDraft(){S.d={pts:[],dbt:[],removed:[],auto:0,added:0,prom:0,cal:[]};if(!S.rect)S.rect={x:0,y:0,w:1,h:1}}
 function tap(p){
   if(S.busy||S.done)return;
   if(!S.d){if(S.mode!=='one')return;newDraft()}
@@ -223,22 +226,22 @@ function tap(p){
   if(i>=0){const [q]=S.d.pts.splice(i,1);if(q.src==='auto')S.d.removed.push(q);else S.d.added--;return render()}
   i=S.d.dbt.findIndex(near);
   if(i>=0){const [q]=S.d.dbt.splice(i,1);q.src='user';S.d.pts.push(q);S.d.prom++;return render()}
-  const pp=P(),W=IM.W,[lo,hi]=range(),win=Math.round(pp.rs.length>=3?lo*.8:.02*W);
-  const b=best(p.x*W,p.y*IM.H,lo,hi,win,sgs());const q=b.v>.02?{x:b.x/W,y:b.y/IM.H,src:'user'}:{x:p.x,y:p.y,src:'user'};
+  const q={x:p.x,y:p.y,src:'user'},c=calib(p.x,p.y);
+  if(c){q.x=c.x;q.y=c.y;S.d.cal.push(c)}
   S.d.pts.push(q);S.d.added++;
-  if(pp.rs.length<3){learn([q],[]);q.l=true;if(pp.rs.length===3)msg('Calibrado ✔ Ya puedes usar Auto-completar.')}
+  msg(S.d.cal.length>=3?'Calibrado ✔ Pulsa Auto-completar para marcar el resto de este grupo.':`Toca el centro de más bocas (${S.d.cal.length}/3 para calibrar).`);
   render();
 }
 function render(){
   st.querySelectorAll('.sec,.dot').forEach(n=>n.remove());
   const add=(c,s,h)=>{const d=document.createElement('div');d.className=c;d.style.cssText=s;if(h!=null)d.innerHTML=h;st.appendChild(d);return d};
-  S.secs.forEach(s=>{add('sec',pr(s.rect),`<span>S${s.id}: ${s.pts.length}</span>`);s.pts.forEach(p=>add('dot',`left:${p.x*100}%;top:${p.y*100}%`))});
+  S.secs.forEach(s=>{add('sec',pr(s.rect),`<span>S${s.id}: ${s.pts.length}</span>`);s.pts.forEach(p=>add('dot',`left:${p.x*100}%;top:${p.y*100}%;background:hsl(${(s.id*67)%360} 90% 55%)`))});
   if(S.rect&&!(S.d&&S.mode==='one'&&S.rect.w===1&&S.rect.h===1))add('sec d',pr(S.rect),`<span>S${S.secs.length+1}${S.d?': '+S.d.pts.length:''}</span>`);
   if(S.d){S.d.pts.forEach(p=>add('dot e',`left:${p.x*100}%;top:${p.y*100}%`));S.d.dbt.forEach(p=>add('dot e m',`left:${p.x*100}%;top:${p.y*100}%`))}
   st.style.touchAction=(S.mode==='sec'&&!S.d)?'none':'pan-x pan-y';
   $('#info').textContent=S.d?`Puntos: ${S.d.pts.length} · dudosos (ámbar): ${S.d.dbt.length}. Toca un punto verde para quitarlo; un ámbar para contarlo; un espacio vacío para añadir.`:'';
   $('#fin').textContent=S.done?'Exportar CSV':`Finalizar (${S.secs.length})`;$('#fin').disabled=!S.secs.length||(!S.done&&!!S.d)||!!S.busy;
-  $('#auto').hidden=!(S.mode==='one'&&S.d&&P().rs.length>=3);$('#act').hidden=S.done;
+  $('#auto').hidden=!(S.d&&S.d.cal.length>=1);$('#act').hidden=S.done;
   $('#act').textContent=S.busy?'Procesando…':S.d?'Confirmar ✓':'Detectar ➜';
   $('#act').disabled=!!S.busy||(!S.d&&!S.rect&&S.mode==='sec');
   $('#und').disabled=!S.d||!S.d.pts.length;
@@ -248,7 +251,7 @@ function run(){
   setTimeout(()=>{
     try{
       if(!S.d)newDraft();
-      const ex=[...S.d.pts,...S.d.dbt],o=detect(S.rect,ex);
+      const ex=[...S.secs.flatMap(q=>q.pts),...S.d.pts,...S.d.dbt],o=detect(S.rect,ex);
       S.d.pts.push(...o.pts);S.d.dbt.push(...o.dbt);S.d.auto+=o.pts.length;
       msg(`Detectadas ${o.pts.length} tuberías y ${o.dbt.length} dudosas. Revisa y corrige; luego confirma.`);
     }catch(e){msg('❌ Error al detectar: '+e.message)}
@@ -261,7 +264,7 @@ $('#dis').onclick=()=>{S.d=null;S.rect=null;msg('Sección descartada.');render()
 $('#act').onclick=()=>{
   if(!S.d)return run();
   const d=S.d,id=S.secs.length+1;
-  learn(d.pts.filter(p=>!p.l),d.removed);
+  learn(d.pts);
   DB.hist.push({n:d.pts.length,c:d.removed.length+d.added+d.prom});DB.hist=DB.hist.slice(-40);save();
   S.secs.push({id,rect:S.rect,pts:d.pts});S.d=null;S.rect=null;
   msg(`✅ Sección ${id} confirmada — ${total()} unidades en total. Marca la siguiente sección o finaliza.`);render();stats();
