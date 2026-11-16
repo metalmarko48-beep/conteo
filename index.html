@@ -35,7 +35,7 @@ section{padding:30px 0}h2{font-size:24px;margin:0 0 6px}.sub{color:var(--mut);ma
 #stage{position:relative;width:100%;user-select:none;-webkit-user-select:none}#stage img{display:block;width:100%;pointer-events:none}
 .sec{position:absolute;border:1.5px solid #6fdc8c;pointer-events:none}.sec.d{border-color:var(--amber)}
 .sec span{position:absolute;top:-20px;left:-2px;background:#000b;color:#6fdc8c;font:700 12px system-ui;padding:1px 6px;white-space:nowrap}
-.dot{position:absolute;width:10px;height:10px;margin:-5px;box-shadow:0 0 0 1.5px #000a;border-radius:50%;background:var(--green);pointer-events:none}.dot.e{width:13px;height:13px;margin:-6.5px}.dot.m{background:var(--amber)}
+.dot{position:absolute;aspect-ratio:1;height:auto;min-width:4px;margin:0;transform:translate(-50%,-50%);box-shadow:0 0 0 1.5px #000a;border-radius:50%;background:var(--green);pointer-events:none}.dot.e{min-width:6px}.dot.m{background:var(--amber)}
 .bar{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}.bar .btn{flex:1;min-width:130px}
 .info{color:var(--mut);font-size:14px;margin:8px 0}
 table{width:100%;border-collapse:collapse;margin-top:8px}td,th{padding:10px 6px;border-bottom:1px solid var(--line);text-align:right}td:first-child,th:first-child{text-align:left}.tot{font-weight:800;color:var(--amber)}
@@ -176,7 +176,7 @@ function detect(rc,existing){
   for(const q of peaks(box,T,r?Math.max(3,.5*r):4)){
     if(existing.some(e=>Math.hypot(e.x*W-q.x,e.y*H-q.y)<Math.max(q.r,4)))continue;
     if(r&&q.r>1.8*r)continue;
-    (!r||(q.r>=.7*r&&q.r<=1.4*r)?pts:dbt).push({x:q.x/W,y:q.y/H,src:'auto'});
+    (!r||(q.r>=.7*r&&q.r<=1.4*r)?pts:dbt).push({x:q.x/W,y:q.y/H,rr:q.r/W,src:'auto'});
   }
   return{pts,dbt};
 }
@@ -188,13 +188,15 @@ function learn(pos){
 }
 
 /* ---------- interfaz ---------- */
+const dsz=p=>Math.max(.2,(p.rr||.007)*100*.9),dp=p=>`left:${p.x*100}%;top:${p.y*100}%;width:${dsz(p)}%`;
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const total=()=>S.secs.reduce((a,s)=>a+s.pts.length,0);
 const pr=r=>`left:${r.x*100}%;top:${r.y*100}%;width:${r.w*100}%;height:${r.h*100}%`;
 const msg=t=>$('#banner').textContent=t;
 function mats(){const m=$('#mat');m.innerHTML=Object.keys({General:1,...DB.profiles}).map(k=>`<option ${k===DB.active?'selected':''}>${k}</option>`).join('')+'<option value="__n">＋ Nuevo material…</option>'}
 $('#mat').onchange=e=>{if(e.target.value==='__n'){const n=(prompt('Nombre del material (ej. Cuadrado 50x50)')||'').trim();if(n)DB.active=n}else DB.active=e.target.value;save();mats();stats()};
 function setMode(m){S.mode=m;$('#m1').classList.toggle('on',m==='sec');$('#m2').classList.toggle('on',m==='one');
-  msg(m==='sec'?'Arrastra sobre la foto para marcar la sección y pulsa Detectar.':'Toca el centro de 3 bocas para que la app aprenda su tamaño; luego pulsa Auto-completar y corrige tocando.');render()}
+  msg(m==='sec'?'Arrastra sobre la foto para marcar la sección y pulsa Detectar.':'1) Elige el material. 2) Arrastra para marcar el área (S1, S2…). 3) Toca 3 bocas para calibrar y pulsa Auto-completar.');render()}
 $('#m1').onclick=()=>setMode('sec');$('#m2').onclick=()=>setMode('one');
 
 $('#file').onchange=e=>{
@@ -209,25 +211,27 @@ $('#zi').onclick=()=>setZoom(S.zoom+.5);$('#zo').onclick=()=>setZoom(S.zoom-.5);
 
 const st=$('#stage');let drag=null;
 const rel=e=>{const b=st.getBoundingClientRect();return{x:Math.min(1,Math.max(0,(e.clientX-b.left)/b.width)),y:Math.min(1,Math.max(0,(e.clientY-b.top)/b.height)),sx:e.clientX,sy:e.clientY}};
-st.addEventListener('pointerdown',e=>{const p=rel(e);drag={p,moved:false,rect:S.mode==='sec'&&!S.d};if(drag.rect){S.rect=null;st.setPointerCapture(e.pointerId)}});
+st.addEventListener('pointerdown',e=>{const p=rel(e);drag={p,moved:false,rect:!S.d,prev:S.rect};if(drag.rect)st.setPointerCapture(e.pointerId)});
 st.addEventListener('pointermove',e=>{if(!drag)return;const p=rel(e);if(Math.hypot(p.sx-drag.p.sx,p.sy-drag.p.sy)>8)drag.moved=true;
-  if(drag.rect){S.rect={x:Math.min(p.x,drag.p.x),y:Math.min(p.y,drag.p.y),w:Math.abs(p.x-drag.p.x),h:Math.abs(p.y-drag.p.y)};render()}});
+  if(drag.rect&&drag.moved){S.rect={x:Math.min(p.x,drag.p.x),y:Math.min(p.y,drag.p.y),w:Math.abs(p.x-drag.p.x),h:Math.abs(p.y-drag.p.y)};render()}});
 st.addEventListener('pointerup',e=>{if(!drag)return;const d=drag;drag=null;
-  if(d.rect){if(S.rect&&(S.rect.w<.02||S.rect.h<.02))S.rect=null;render();if(!S.rect&&!d.moved)return;return}
+  if(d.rect&&d.moved){if(S.rect&&(S.rect.w<.02||S.rect.h<.02))S.rect=d.prev;render();if(S.rect&&S.mode==='one')msg(`Área S${S.secs.length+1} lista (${$('#mat').value}). Toca el centro de 3 bocas para calibrar y pulsa Auto-completar.`);return}
   if(!d.moved)tap(d.p)});
 st.addEventListener('pointercancel',()=>drag=null);
 
-function newDraft(){S.d={pts:[],dbt:[],removed:[],auto:0,added:0,prom:0,cal:[]};if(!S.rect)S.rect={x:0,y:0,w:1,h:1}}
+function newDraft(){S.d={pts:[],dbt:[],removed:[],auto:0,added:0,prom:0,cal:[]}}
 function tap(p){
   if(S.busy||S.done)return;
-  if(!S.d){if(S.mode!=='one')return;newDraft()}
+  if(!S.d){if(S.mode!=='one')return;if(!S.rect)return msg('Primero selecciona el área: arrastra sobre la foto para marcar S'+(S.secs.length+1)+' (un solo tipo de material).');newDraft()}
+  const R=S.rect;if(R&&(p.x<R.x||p.x>R.x+R.w||p.y<R.y||p.y>R.y+R.h))return msg('Toca dentro del área marcada (S'+(S.secs.length+1)+').');
   const bw=st.getBoundingClientRect(),near=a=>Math.hypot((a.x-p.x)*bw.width,(a.y-p.y)*bw.height)<16;
   let i=S.d.pts.findIndex(near);
   if(i>=0){const [q]=S.d.pts.splice(i,1);if(q.src==='auto')S.d.removed.push(q);else S.d.added--;return render()}
   i=S.d.dbt.findIndex(near);
   if(i>=0){const [q]=S.d.dbt.splice(i,1);q.src='user';S.d.pts.push(q);S.d.prom++;return render()}
-  const q={x:p.x,y:p.y,src:'user'},c=calib(p.x,p.y);
+  const q={x:p.x,y:p.y,src:'user'},c=calib(p.x,p.y),pr0=params().r;
   if(c){q.x=c.x;q.y=c.y;S.d.cal.push(c)}
+  q.rr=c?c.r/IM.W:(pr0?pr0/IM.W:.007);
   S.d.pts.push(q);S.d.added++;
   msg(S.d.cal.length>=3?'Calibrado ✔ Pulsa Auto-completar para marcar el resto de este grupo.':`Toca el centro de más bocas (${S.d.cal.length}/3 para calibrar).`);
   render();
@@ -235,15 +239,15 @@ function tap(p){
 function render(){
   st.querySelectorAll('.sec,.dot').forEach(n=>n.remove());
   const add=(c,s,h)=>{const d=document.createElement('div');d.className=c;d.style.cssText=s;if(h!=null)d.innerHTML=h;st.appendChild(d);return d};
-  S.secs.forEach(s=>{add('sec',pr(s.rect),`<span>S${s.id}: ${s.pts.length}</span>`);s.pts.forEach(p=>add('dot',`left:${p.x*100}%;top:${p.y*100}%;background:hsl(${(s.id*67)%360} 90% 55%)`))});
-  if(S.rect&&!(S.d&&S.mode==='one'&&S.rect.w===1&&S.rect.h===1))add('sec d',pr(S.rect),`<span>S${S.secs.length+1}${S.d?': '+S.d.pts.length:''}</span>`);
-  if(S.d){S.d.pts.forEach(p=>add('dot e',`left:${p.x*100}%;top:${p.y*100}%`));S.d.dbt.forEach(p=>add('dot e m',`left:${p.x*100}%;top:${p.y*100}%`))}
-  st.style.touchAction=(S.mode==='sec'&&!S.d)?'none':'pan-x pan-y';
+  S.secs.forEach(s=>{add('sec',pr(s.rect),`<span>S${s.id}: ${s.pts.length}</span>`);s.pts.forEach(p=>add('dot',dp(p)+`;background:hsl(${(s.id*67)%360} 90% 55%)`))});
+  if(S.rect)add('sec d',pr(S.rect),`<span>S${S.secs.length+1}${S.d?': '+S.d.pts.length:''}</span>`);
+  if(S.d){S.d.pts.forEach(p=>add('dot e',dp(p)));S.d.dbt.forEach(p=>add('dot e m',dp(p)))}
+  st.style.touchAction=!S.d?'none':'pan-x pan-y';
   $('#info').textContent=S.d?`Puntos: ${S.d.pts.length} · dudosos (ámbar): ${S.d.dbt.length}. Toca un punto verde para quitarlo; un ámbar para contarlo; un espacio vacío para añadir.`:'';
   $('#fin').textContent=S.done?'Exportar CSV':`Finalizar (${S.secs.length})`;$('#fin').disabled=!S.secs.length||(!S.done&&!!S.d)||!!S.busy;
   $('#auto').hidden=!(S.d&&S.d.cal.length>=1);$('#act').hidden=S.done;
   $('#act').textContent=S.busy?'Procesando…':S.d?'Confirmar ✓':'Detectar ➜';
-  $('#act').disabled=!!S.busy||(!S.d&&!S.rect&&S.mode==='sec');
+  $('#act').disabled=!!S.busy||(!S.d&&!S.rect);
   $('#und').disabled=!S.d||!S.d.pts.length;
 }
 function run(){
@@ -266,14 +270,14 @@ $('#act').onclick=()=>{
   const d=S.d,id=S.secs.length+1;
   learn(d.pts);
   DB.hist.push({n:d.pts.length,c:d.removed.length+d.added+d.prom});DB.hist=DB.hist.slice(-40);save();
-  S.secs.push({id,rect:S.rect,pts:d.pts});S.d=null;S.rect=null;
-  msg(`✅ Sección ${id} confirmada — ${total()} unidades en total. Marca la siguiente sección o finaliza.`);render();stats();
+  S.secs.push({id,rect:S.rect,pts:d.pts,mat:DB.active});S.d=null;S.rect=null;
+  msg(`✅ Sección ${id} confirmada — ${total()} unidades en total. Elige el material y marca el área S${id+1}, o finaliza.`);render();stats();
 };
 $('#cancel').onclick=()=>{S.secs=[];S.d=null;S.rect=null;S.done=false;$('#work').hidden=true;$('#bar').hidden=true;$('#result').hidden=true;$('#drop').hidden=false;$('#file').value='';msg('Sube una foto del rack para empezar.')};
 $('#fin').onclick=async()=>{
-  if(S.done){const r=['seccion,cantidad',...S.secs.map(s=>`S${s.id},${s.pts.length}`),`TOTAL,${total()}`].join('\n');return dl(new Blob([r],{type:'text/csv'}),'conteo.csv')}
+  if(S.done){const r=['seccion,material,cantidad',...S.secs.map(s=>`S${s.id},"${s.mat.replace(/"/g,'')}",${s.pts.length}`),`TOTAL,,${total()}`].join('\n');return dl(new Blob([r],{type:'text/csv'}),'conteo.csv')}
   S.done=true;$('#wrap').hidden=true;$('.tb').hidden=true;$('#info').textContent='';
-  $('#result').innerHTML='<table><thead><tr><th>Sección</th><th>Tuberías</th></tr></thead><tbody>'+S.secs.map(s=>`<tr><td>S${s.id}</td><td>${s.pts.length}</td></tr>`).join('')+`<tr class="tot"><td>TOTAL CONFIRMADO</td><td>${total()}</td></tr></tbody></table>`;
+  $('#result').innerHTML='<table><thead><tr><th>Sección · Material</th><th>Tuberías</th></tr></thead><tbody>'+S.secs.map(s=>`<tr><td>S${s.id} · ${esc(s.mat)}</td><td>${s.pts.length}</td></tr>`).join('')+`<tr class="tot"><td>TOTAL CONFIRMADO</td><td>${total()}</td></tr></tbody></table>`;
   $('#result').hidden=false;msg(`Conteo finalizado — ${total()} unidades en ${S.secs.length} secciones.`);
   try{await dsPut({name:DB.active,file:S.name,blob:S.blob,r:med(P().rs),pts:S.secs.flatMap(s=>s.pts.map(p=>({x:p.x,y:p.y}))),w:IM.nw,h:IM.nh});DB.photos++;save()}catch(e){}
   render();stats();
