@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1017"><meta name="color-scheme" content="dark">
+<meta name="description" content="Conteo inteligente de tuberías desde una foto. Todo ocurre en tu dispositivo.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23f0b429'/%3E%3Ctext x='50' y='70' font-size='64' font-weight='800' text-anchor='middle' fill='%23111'%3EM%3C/text%3E%3C/svg%3E">
+<title>Metalmark · Conteo inteligente de tuberías</title>
+<style>
+:root{--bg:#0b1017;--bg2:#121a24;--card:#161f2b;--line:#243040;--fg:#eaeff5;--mut:#93a0b1;--amber:#f0b429;--green:#3fd068;--red:#ef5350;--r:16px;color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html{scroll-behavior:smooth;scroll-padding-top:64px}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;padding-bottom:env(safe-area-inset-bottom,0)}
+nav{position:sticky;top:0;z-index:20;background:#0b1017e6;backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:max(10px,env(safe-area-inset-top,0)) 16px 10px;display:flex;align-items:center;gap:10px}
+.logo{width:36px;height:36px;border-radius:9px;background:var(--amber);color:#111;font-weight:800;display:grid;place-items:center}
+nav b{flex:1;font-size:17px}nav a{color:var(--mut);text-decoration:none;font-size:14px;padding:8px 6px}
+.wrap{max-width:980px;margin:0 auto;padding:0 16px}
+.hero{padding:44px 0 30px;text-align:center;background:radial-gradient(600px 300px at 50% 0,#f0b4291f,transparent)}
+.tag{display:inline-block;border:1px solid #5a4a14;color:#f3dfa0;background:#2a2410;border-radius:99px;padding:4px 12px;font-size:13px}
+h1{font-size:clamp(28px,7.5vw,46px);line-height:1.1;margin:16px 0 12px;letter-spacing:-.02em}h1 em{font-style:normal;color:var(--amber)}
+.hero p{color:var(--mut);max-width:560px;margin:0 auto 22px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 22px;border:0;border-radius:12px;font:700 16px system-ui;cursor:pointer;background:var(--card);color:var(--fg);border:1px solid var(--line);text-decoration:none}
+.btn.p{background:var(--amber);color:#111;border-color:var(--amber)}.btn.g{background:#2f7d3a;border-color:#2f7d3a;color:#fff}.btn:disabled{opacity:.4}
+.row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+section{padding:30px 0}h2{font-size:24px;margin:0 0 6px}.sub{color:var(--mut);margin:0 0 18px}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px}.card h3{margin:6px 0 4px;font-size:17px}.card p{margin:0;color:var(--mut);font-size:15px}.ico{font-size:26px}
+.steps{counter-reset:s;display:grid;gap:10px}.steps div{counter-increment:s;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 14px 14px 56px;position:relative;color:var(--mut)}
+.steps div:before{content:counter(s);position:absolute;left:14px;top:12px;width:28px;height:28px;border-radius:50%;background:var(--amber);color:#111;font-weight:800;display:grid;place-items:center}.steps b{color:var(--fg)}
+#app{background:var(--bg2);border-block:1px solid var(--line)}
+#banner{background:#2a2410;border:1px solid #5a4a14;color:#f3dfa0;padding:12px 14px;border-radius:12px;margin:12px 0;font-size:15px}
+.ctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}.ctl select{flex:1;min-width:150px;min-height:44px;background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:0 10px;font-size:15px}
+.seg{display:flex;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:3px;width:100%}.seg button{flex:1;min-height:42px;border:0;border-radius:9px;background:none;color:var(--mut);font:600 15px system-ui}.seg .on{background:var(--amber);color:#111}
+#drop{display:grid;place-items:center;text-align:center;min-height:240px;border:2px dashed #3a4656;border-radius:var(--r);color:var(--mut);cursor:pointer;padding:14px}
+.tb{display:flex;gap:8px;margin:10px 0}.tb button{min-height:42px;min-width:44px;padding:0 12px;flex:none;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--fg);font:600 15px system-ui}.tb .sp{flex:1;border:0;background:none}
+#wrap{overflow:auto;border-radius:var(--r);border:1px solid var(--line);max-height:72vh;background:#000}
+#stage{position:relative;width:100%;user-select:none;-webkit-user-select:none}#stage img{display:block;width:100%;pointer-events:none}
+.sec{position:absolute;border:1.5px solid #6fdc8c;pointer-events:none}.sec.d{border-color:var(--amber)}
+.sec span{position:absolute;top:-20px;left:-2px;background:#000b;color:#6fdc8c;font:700 12px system-ui;padding:1px 6px;white-space:nowrap}
+.dot{position:absolute;width:7px;height:7px;margin:-3.5px;border-radius:50%;background:var(--green);pointer-events:none}.dot.e{width:12px;height:12px;margin:-6px;box-shadow:0 0 0 1.5px #000a}.dot.m{background:var(--amber)}
+.bar{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}.bar .btn{flex:1;min-width:130px}
+.info{color:var(--mut);font-size:14px;margin:8px 0}
+table{width:100%;border-collapse:collapse;margin-top:8px}td,th{padding:10px 6px;border-bottom:1px solid var(--line);text-align:right}td:first-child,th:first-child{text-align:left}.tot{font-weight:800;color:var(--amber)}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}@media(min-width:640px){.stats{grid-template-columns:repeat(4,1fr)}}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px}.stat b{display:block;font-size:26px;color:var(--amber)}.stat small{color:var(--mut)}
+#spark{display:flex;align-items:flex-end;gap:4px;height:60px;margin:14px 0 4px}#spark i{flex:1;background:var(--amber);border-radius:3px 3px 0 0;min-height:3px}
+footer{text-align:center;color:var(--mut);font-size:13px;padding:26px 16px}
+
+html,body{overflow-x:hidden}
+nav b{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+nav a{white-space:nowrap}
+@media(max-width:480px){nav{gap:8px;padding-left:12px;padding-right:12px}nav a[href="#como"]{display:none}nav b{font-size:16px}}
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style></head>
+<body>
+<nav><div class="logo">M</div><b>Metalmark</b><a href="#como">Cómo funciona</a><a href="#app">App</a><a href="#aprende">Aprendizaje</a></nav>
+
+<header class="hero"><div class="wrap">
+<span class="tag">Conteo de stock · funciona en tu celular</span>
+<h1>Cuenta tuberías <em>una por una</em>.<br>Y aprende de cada conteo.</h1>
+<p>Sube una foto del rack, marca las secciones y corrige. La app recuerda cómo se ve cada material y cada vez necesita menos correcciones.</p>
+<div class="row"><label class="btn p" for="file">📷 Subir foto y contar</label><a class="btn" href="#como">Cómo funciona</a></div>
+</div></header>
+
+<section id="como"><div class="wrap">
+<h2>Cómo funciona</h2><p class="sub">Una tubería es una unidad física individual, no un patrón visual.</p>
+<div class="grid">
+<div class="card"><div class="ico">🧩</div><h3>Conteo por secciones</h3><p>Marca cada paquete del rack (S1, S2…). Cada sección se cuenta aparte, con total acumulado.</p></div>
+<div class="card"><div class="ico">👆</div><h3>Conteo 1 por 1</h3><p>Toca cada tubería: la app ajusta el punto a la boca y aprende su tamaño al instante.</p></div>
+<div class="card"><div class="ico">🧠</div><h3>Memoria por material</h3><p>Guarda tamaño, contraste y separación de cada material en tu dispositivo.</p></div>
+<div class="card"><div class="ico">📦</div><h3>Dataset para tu modelo</h3><p>Exporta tus fotos corregidas listas para entrenar un detector propio.</p></div>
+</div>
+<div class="steps" style="margin-top:14px">
+<div><b>Sube la foto</b> y elige el material (por ejemplo, "Cuadrado 50×50").</div>
+<div><b>Detecta o toca</b> las primeras tuberías para calibrar el tamaño.</div>
+<div><b>Corrige:</b> toca un punto para quitarlo, toca una boca sin punto para añadirla. Ámbar = dudosa; tócala para contarla.</div>
+<div><b>Confirma la sección.</b> Al confirmar, la app aprende de tus correcciones.</div>
+</div></div></section>
+
+<section id="app"><div class="wrap">
+<h2>Contador</h2><p class="sub">Todo ocurre en tu dispositivo. Las fotos no se suben a ningún servidor.</p>
+<div class="ctl"><select id="mat" aria-label="Material"></select></div>
+<div class="seg"><button id="m1" class="on">Por secciones</button><button id="m2">1 por 1</button></div>
+<div id="banner">Sube una foto del rack para empezar.</div>
+<label id="drop" for="file">📷<br>Toca para subir la foto del rack</label>
+<input id="file" type="file" accept="image/*" hidden>
+<div id="work" hidden>
+ <div class="tb"><button id="zi" aria-label="Acercar">+</button><button id="zo" aria-label="Alejar">−</button><button id="zf" aria-label="Ajustar a pantalla">⤢</button><span class="sp"></span><button id="und">↶ Deshacer</button><button id="dis" aria-label="Descartar sección">🗑</button></div>
+ <div id="wrap"><div id="stage"><img id="img" alt="Foto del rack"></div></div>
+ <p class="info" id="info"></p>
+</div>
+<div id="result" hidden></div>
+<div class="bar" id="bar" hidden>
+ <button class="btn" id="cancel">Cancelar</button>
+ <button class="btn" id="auto" hidden>Auto-completar</button>
+ <button class="btn g" id="fin" disabled>Finalizar (0)</button>
+ <button class="btn p" id="act" disabled>Detectar ➜</button>
+</div>
+</div></section>
+
+<section id="aprende"><div class="wrap">
+<h2>Aprendizaje</h2><p class="sub" id="lsub">Material activo</p>
+<div class="stats">
+<div class="stat"><b id="s1">0</b><small>Tuberías aprendidas</small></div>
+<div class="stat"><b id="s2">—</b><small>Tamaño típico (% del ancho)</small></div>
+<div class="stat"><b id="s3">0</b><small>Fotos en el dataset</small></div>
+<div class="stat"><b id="s4">—</b><small>Correcciones por 100 tubos</small></div></div>
+<div id="spark" aria-label="Correcciones recientes"></div><small style="color:var(--mut)">Últimas secciones confirmadas: barras más bajas = menos correcciones.</small>
+<div class="row" style="margin-top:16px"><button class="btn" id="exp">⬇ Exportar dataset (.zip)</button><button class="btn" id="rst">Reiniciar material</button></div>
+<p class="info">El .zip trae imágenes, etiquetas en formato YOLO y data.yaml para entrenar tu propio modelo.</p>
+</div></section>
+<footer>Metalmark · Conteo de stock con visión asistida</footer>
+
+<script>
+const $=s=>document.querySelector(s),LS='metalmark.v1';
+let DB;try{DB=JSON.parse(localStorage.getItem(LS))}catch(e){}
+DB=DB||{active:'General',profiles:{},hist:[],photos:0};
+const save=()=>{try{localStorage.setItem(LS,JSON.stringify(DB))}catch(e){}};
+const newP=()=>({rs:[],ps:[],ns:[],sg:[],r:0,thr:.12,nms:1.5,sign:1});
+const P=()=>DB.profiles[DB.active]||(DB.profiles[DB.active]=newP());
+const med=a=>{const s=[...a].sort((x,y)=>x-y);return s.length?s[s.length>>1]:0},pct=(a,q)=>{const s=[...a].sort((x,y)=>x-y);return s.length?s[Math.min(s.length-1,Math.floor(q*s.length))]:0};
+const S={mode:'sec',rect:null,d:null,secs:[],done:false,zoom:1,blob:null,name:''};
+let IM=null,N=0;
+
+/* ---------- imagen y respuesta de boca de tubería ---------- */
+function prep(img){
+  const m=Math.min(1,1400/Math.max(img.naturalWidth,img.naturalHeight)),W=Math.round(img.naturalWidth*m),H=Math.round(img.naturalHeight*m);
+  const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(img,0,0,W,H);
+  const d=x.getImageData(0,0,W,H).data,s=W+1,I=new Float64Array(s*(H+1));
+  for(let y=0;y<H;y++){let row=0;for(let k=0;k<W;k++){const i=(y*W+k)*4;row+=.299*d[i]+.587*d[i+1]+.114*d[i+2];I[(y+1)*s+k+1]=I[y*s+k+1]+row}}
+  IM={W,H,I,nw:img.naturalWidth,nh:img.naturalHeight};
+}
+function bs(x,y,h){const x0=Math.round(x-h),y0=Math.round(y-h),x1=Math.round(x+h),y1=Math.round(y+h),s=IM.W+1,I=IM.I;N=(x1-x0)*(y1-y0);return I[y1*s+x1]-I[y0*s+x1]-I[y1*s+x0]+I[y0*s+x0]}
+function resp(x,y,r,sg){
+  const c=1.2*r;if(r<3||x<c+1||y<c+1||x+c>=IM.W-1||y+c>=IM.H-1)return -9;
+  const sa=bs(x,y,.45*r),na=N,sb=bs(x,y,.8*r),nb=N,sc=bs(x,y,c),nc=N;
+  if(na<=0||nc-nb<=0)return -9;return sg*((sc-sb)/(nc-nb)-sa/na)/255;
+}
+function range(){const p=P();return p.rs.length>=3?[.6*med(p.rs)*IM.W,1.5*med(p.rs)*IM.W,5]:[.008*IM.W,.08*IM.W,8]}
+function best(x,y,lo,hi,win,sgs){
+  let b={v:-9};const K=5;
+  for(let k=0;k<K;k++){const r=lo*Math.pow(hi/lo,k/(K-1)),st=Math.max(1,Math.round(r/5));
+    for(let dy=-win;dy<=win;dy+=st)for(let dx=-win;dx<=win;dx+=st)for(const sg of sgs){const v=resp(x+dx,y+dy,r,sg);if(v>b.v)b={v,x:x+dx,y:y+dy,r,sg}}}
+  return b;
+}
+const sgs=()=>P().rs.length>=3?[P().sign]:[1,-1];
+
+/* ---------- detección automática ---------- */
+function detect(rc,existing){
+  const p=P(),[lo,hi,K]=range(),W=IM.W,H=IM.H;
+  const x0=rc.x*W,y0=rc.y*H,x1=(rc.x+rc.w)*W,y1=(rc.y+rc.h)*H,st=Math.max(2,Math.round(lo/4)),thr=p.thr,cand=[];
+  for(let y=y0;y<y1;y+=st)for(let x=x0;x<x1;x+=st){
+    let bv=-9,br=0;for(let k=0;k<K;k++){const r=lo*Math.pow(hi/lo,k/(K-1)),v=resp(x,y,r,p.sign);if(v>bv){bv=v;br=r}}
+    if(bv>.6*thr)cand.push({x,y,r:br,v:bv});
+  }
+  cand.sort((a,b)=>b.v-a.v);const acc=[];
+  for(const c of cand){
+    if(acc.some(a=>Math.hypot(a.x-c.x,a.y-c.y)<p.nms*Math.min(a.r,c.r)))continue;
+    if(existing.some(e=>Math.hypot(e.x*W-c.x,e.y*H-c.y)<1.1*c.r))continue;
+    acc.push(c);
+  }
+  const pts=[],dbt=[];
+  for(const a of acc){
+    const b=best(a.x,a.y,a.r*.9,a.r*1.1,st,[p.sign]);const q=b.v>-9?b:a;
+    if(q.x<x0||q.x>x1||q.y<y0||q.y>y1)continue;
+    (a.v>=thr?pts:dbt).push({x:q.x/W,y:q.y/H,src:'auto'});
+  }
+  return{pts,dbt};
+}
+
+/* ---------- aprendizaje ---------- */
+function learn(pos,neg){
+  const p=P(),W=IM.W,H=IM.H,[lo,hi]=range();
+  for(const q of pos){const b=best(q.x*W,q.y*H,lo,hi,Math.round(lo/3),sgs());if(b.v>0){p.rs.push(b.r/W);p.ps.push(b.v);p.sg.push(b.sg)}}
+  if(p.rs.length){const r=med(p.rs)*W;for(const q of neg){const b=best(q.x*W,q.y*H,.7*r,1.4*r,2,[p.sign]);if(b.v>-9)p.ns.push(b.v)}}
+  for(const k of['rs','ps','ns','sg'])if(p[k].length>400)p[k]=p[k].slice(-400);
+  recalc(p,pos.length>5?pos:null);
+}
+function recalc(p,pos){
+  if(!p.sg.length)return;
+  p.sign=p.sg.filter(s=>s>0).length>=p.sg.length/2?1:-1;
+  const lowP=pct(p.ps,.2);p.thr=Math.max(.03,.8*lowP);
+  if(p.ns.length>=3){const hn=pct(p.ns,.75);if(hn<lowP)p.thr=(hn+lowP)/2}
+  if(pos){const W=IM.W,r=med(p.rs)*W,nn=pos.map((a,i)=>Math.min(...pos.map((b,j)=>i===j?1e9:Math.hypot((a.x-b.x)*W,(a.y-b.y)*IM.H))));
+    if(r>0)p.nms=Math.min(1.7,Math.max(1,.8*med(nn)/r))}
+}
+
+/* ---------- interfaz ---------- */
+const total=()=>S.secs.reduce((a,s)=>a+s.pts.length,0);
+const pr=r=>`left:${r.x*100}%;top:${r.y*100}%;width:${r.w*100}%;height:${r.h*100}%`;
+const msg=t=>$('#banner').textContent=t;
+function mats(){const m=$('#mat');m.innerHTML=Object.keys({General:1,...DB.profiles}).map(k=>`<option ${k===DB.active?'selected':''}>${k}</option>`).join('')+'<option value="__n">＋ Nuevo material…</option>'}
+$('#mat').onchange=e=>{if(e.target.value==='__n'){const n=(prompt('Nombre del material (ej. Cuadrado 50x50)')||'').trim();if(n)DB.active=n}else DB.active=e.target.value;save();mats();stats()};
+function setMode(m){S.mode=m;$('#m1').classList.toggle('on',m==='sec');$('#m2').classList.toggle('on',m==='one');
+  msg(m==='sec'?'Arrastra sobre la foto para marcar la sección.':'Toca cada tubería. Con 3 toques la app calibra el tamaño; luego usa Auto-completar.');render()}
+$('#m1').onclick=()=>setMode('sec');$('#m2').onclick=()=>setMode('one');
+
+$('#file').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  const img=$('#img');img.onload=()=>{prep(img);S.secs=[];S.rect=null;S.d=null;S.done=false;S.blob=f;S.name=f.name;
+    $('#drop').hidden=true;$('#work').hidden=false;$('#wrap').hidden=false;$('#bar').hidden=false;$('#result').hidden=true;
+    setZoom(1);setMode(S.mode);$('#app').scrollIntoView()};
+  img.src=URL.createObjectURL(f);
+};
+function setZoom(z){S.zoom=Math.min(5,Math.max(1,z));$('#stage').style.width=S.zoom*100+'%'}
+$('#zi').onclick=()=>setZoom(S.zoom+.5);$('#zo').onclick=()=>setZoom(S.zoom-.5);$('#zf').onclick=()=>setZoom(1);
+
+const st=$('#stage');let drag=null;
+const rel=e=>{const b=st.getBoundingClientRect();return{x:Math.min(1,Math.max(0,(e.clientX-b.left)/b.width)),y:Math.min(1,Math.max(0,(e.clientY-b.top)/b.height)),sx:e.clientX,sy:e.clientY}};
+st.addEventListener('pointerdown',e=>{const p=rel(e);drag={p,moved:false,rect:S.mode==='sec'&&!S.d};if(drag.rect){S.rect=null;st.setPointerCapture(e.pointerId)}});
+st.addEventListener('pointermove',e=>{if(!drag)return;const p=rel(e);if(Math.hypot(p.sx-drag.p.sx,p.sy-drag.p.sy)>8)drag.moved=true;
+  if(drag.rect){S.rect={x:Math.min(p.x,drag.p.x),y:Math.min(p.y,drag.p.y),w:Math.abs(p.x-drag.p.x),h:Math.abs(p.y-drag.p.y)};render()}});
+st.addEventListener('pointerup',e=>{if(!drag)return;const d=drag;drag=null;
+  if(d.rect){if(S.rect&&(S.rect.w<.02||S.rect.h<.02))S.rect=null;render();if(!S.rect&&!d.moved)return;return}
+  if(!d.moved)tap(d.p)});
+st.addEventListener('pointercancel',()=>drag=null);
+
+function newDraft(){S.d={pts:[],dbt:[],removed:[],auto:0,added:0,prom:0};if(!S.rect)S.rect={x:0,y:0,w:1,h:1}}
+function tap(p){
+  if(S.busy||S.done)return;
+  if(!S.d){if(S.mode!=='one')return;newDraft()}
+  const bw=st.getBoundingClientRect(),near=a=>Math.hypot((a.x-p.x)*bw.width,(a.y-p.y)*bw.height)<16;
+  let i=S.d.pts.findIndex(near);
+  if(i>=0){const [q]=S.d.pts.splice(i,1);if(q.src==='auto')S.d.removed.push(q);else S.d.added--;return render()}
+  i=S.d.dbt.findIndex(near);
+  if(i>=0){const [q]=S.d.dbt.splice(i,1);q.src='user';S.d.pts.push(q);S.d.prom++;return render()}
+  const pp=P(),W=IM.W,[lo,hi]=range(),win=Math.round(pp.rs.length>=3?lo*.8:.02*W);
+  const b=best(p.x*W,p.y*IM.H,lo,hi,win,sgs());const q=b.v>.02?{x:b.x/W,y:b.y/IM.H,src:'user'}:{x:p.x,y:p.y,src:'user'};
+  S.d.pts.push(q);S.d.added++;
+  if(pp.rs.length<3){learn([q],[]);q.l=true;if(pp.rs.length===3)msg('Calibrado ✔ Ya puedes usar Auto-completar.')}
+  render();
+}
+function render(){
+  st.querySelectorAll('.sec,.dot').forEach(n=>n.remove());
+  const add=(c,s,h)=>{const d=document.createElement('div');d.className=c;d.style.cssText=s;if(h!=null)d.innerHTML=h;st.appendChild(d);return d};
+  S.secs.forEach(s=>{add('sec',pr(s.rect),`<span>S${s.id}: ${s.pts.length}</span>`);s.pts.forEach(p=>add('dot',`left:${p.x*100}%;top:${p.y*100}%`))});
+  if(S.rect&&!(S.d&&S.mode==='one'&&S.rect.w===1&&S.rect.h===1))add('sec d',pr(S.rect),`<span>S${S.secs.length+1}${S.d?': '+S.d.pts.length:''}</span>`);
+  if(S.d){S.d.pts.forEach(p=>add('dot e',`left:${p.x*100}%;top:${p.y*100}%`));S.d.dbt.forEach(p=>add('dot e m',`left:${p.x*100}%;top:${p.y*100}%`))}
+  st.style.touchAction=(S.mode==='sec'&&!S.d)?'none':'pan-x pan-y';
+  $('#info').textContent=S.d?`Puntos: ${S.d.pts.length} · dudosos (ámbar): ${S.d.dbt.length}. Toca un punto verde para quitarlo; un ámbar para contarlo; un espacio vacío para añadir.`:'';
+  $('#fin').textContent=S.done?'Exportar CSV':`Finalizar (${S.secs.length})`;$('#fin').disabled=!S.secs.length||(!S.done&&!!S.d)||!!S.busy;
+  $('#auto').hidden=!(S.mode==='one'&&S.d&&P().rs.length>=3);$('#act').hidden=S.done;
+  $('#act').textContent=S.busy?'Procesando…':S.d?'Confirmar ✓':'Detectar ➜';
+  $('#act').disabled=!!S.busy||(!S.d&&!S.rect&&S.mode==='sec');
+  $('#und').disabled=!S.d||!S.d.pts.length;
+}
+function run(){
+  S.busy=true;render();
+  setTimeout(()=>{
+    try{
+      if(!S.d)newDraft();
+      const ex=[...S.d.pts,...S.d.dbt],o=detect(S.rect,ex);
+      S.d.pts.push(...o.pts);S.d.dbt.push(...o.dbt);S.d.auto+=o.pts.length;
+      msg(`Detectadas ${o.pts.length} tuberías y ${o.dbt.length} dudosas. Revisa y corrige; luego confirma.`);
+    }catch(e){msg('❌ Error al detectar: '+e.message)}
+    S.busy=false;render();
+  },30);
+}
+$('#auto').onclick=run;
+$('#und').onclick=()=>{const q=S.d.pts.pop();if(q.src==='auto')S.d.removed.push(q);render()};
+$('#dis').onclick=()=>{S.d=null;S.rect=null;msg('Sección descartada.');render()};
+$('#act').onclick=()=>{
+  if(!S.d)return run();
+  const d=S.d,id=S.secs.length+1;
+  learn(d.pts.filter(p=>!p.l),d.removed);
+  DB.hist.push({n:d.pts.length,c:d.removed.length+d.added+d.prom});DB.hist=DB.hist.slice(-40);save();
+  S.secs.push({id,rect:S.rect,pts:d.pts});S.d=null;S.rect=null;
+  msg(`✅ Sección ${id} confirmada — ${total()} unidades en total. Marca la siguiente sección o finaliza.`);render();stats();
+};
+$('#cancel').onclick=()=>{S.secs=[];S.d=null;S.rect=null;S.done=false;$('#work').hidden=true;$('#bar').hidden=true;$('#result').hidden=true;$('#drop').hidden=false;$('#file').value='';msg('Sube una foto del rack para empezar.')};
+$('#fin').onclick=async()=>{
+  if(S.done){const r=['seccion,cantidad',...S.secs.map(s=>`S${s.id},${s.pts.length}`),`TOTAL,${total()}`].join('\n');return dl(new Blob([r],{type:'text/csv'}),'conteo.csv')}
+  S.done=true;$('#wrap').hidden=true;$('.tb').hidden=true;$('#info').textContent='';
+  $('#result').innerHTML='<table><thead><tr><th>Sección</th><th>Tuberías</th></tr></thead><tbody>'+S.secs.map(s=>`<tr><td>S${s.id}</td><td>${s.pts.length}</td></tr>`).join('')+`<tr class="tot"><td>TOTAL CONFIRMADO</td><td>${total()}</td></tr></tbody></table>`;
+  $('#result').hidden=false;msg(`Conteo finalizado — ${total()} unidades en ${S.secs.length} secciones.`);
+  try{await dsPut({name:DB.active,file:S.name,blob:S.blob,r:med(P().rs),pts:S.secs.flatMap(s=>s.pts.map(p=>({x:p.x,y:p.y}))),w:IM.nw,h:IM.nh});DB.photos++;save()}catch(e){}
+  render();stats();
+};
+
+/* ---------- dataset (IndexedDB + zip) ---------- */
+const idb=()=>new Promise((ok,no)=>{const r=indexedDB.open('metalmark',1);r.onupgradeneeded=()=>r.result.createObjectStore('ds',{keyPath:'id',autoIncrement:true});r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)});
+const dsPut=async o=>{const d=await idb();return new Promise((ok,no)=>{const t=d.transaction('ds','readwrite');t.objectStore('ds').add(o);t.oncomplete=ok;t.onerror=()=>no(t.error)})};
+const dsAll=async()=>{const d=await idb();return new Promise((ok,no)=>{const q=d.transaction('ds').objectStore('ds').getAll();q.onsuccess=()=>ok(q.result);q.onerror=()=>no(q.error)})};
+function crc(u){let t=crc.t;if(!t){t=crc.t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}}let x=-1;for(const b of u)x=t[(x^b)&255]^(x>>>8);return(x^-1)>>>0}
+function zip(files){
+  const parts=[],cd=[],enc=new TextEncoder();let off=0,cl=0;
+  for(const f of files){const nm=enc.encode(f.n),c=crc(f.d),L=f.d.length,h=new DataView(new ArrayBuffer(30));
+    h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint32(14,c,true);h.setUint32(18,L,true);h.setUint32(22,L,true);h.setUint16(26,nm.length,true);parts.push(h.buffer,nm,f.d);
+    const e=new DataView(new ArrayBuffer(46));e.setUint32(0,0x02014b50,true);e.setUint16(4,20,true);e.setUint16(6,20,true);e.setUint32(16,c,true);e.setUint32(20,L,true);e.setUint32(24,L,true);e.setUint16(28,nm.length,true);e.setUint32(42,off,true);cd.push(e.buffer,nm);
+    off+=30+nm.length+L;cl+=46+nm.length}
+  const z=new DataView(new ArrayBuffer(22));z.setUint32(0,0x06054b50,true);z.setUint16(8,files.length,true);z.setUint16(10,files.length,true);z.setUint32(12,cl,true);z.setUint32(16,off,true);
+  return new Blob([...parts,...cd,z.buffer],{type:'application/zip'});
+}
+function dl(b,n){const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=n;document.body.appendChild(a);a.click();a.remove()}
+$('#exp').onclick=async()=>{
+  try{const all=await dsAll();if(!all.length)return alert('Aún no hay fotos en el dataset. Finaliza al menos un conteo.');
+    const files=[];let i=0;
+    for(const o of all){const id='foto'+String(++i).padStart(4,'0'),bw=2*(o.r||.03),bh=bw*o.w/o.h;
+      files.push({n:`images/${id}.jpg`,d:new Uint8Array(await o.blob.arrayBuffer())});
+      files.push({n:`labels/${id}.txt`,d:new TextEncoder().encode(o.pts.map(p=>`0 ${p.x.toFixed(5)} ${p.y.toFixed(5)} ${bw.toFixed(5)} ${Math.min(1,bh).toFixed(5)}`).join('\n'))})}
+    files.push({n:'data.yaml',d:new TextEncoder().encode('path: .\ntrain: images\nval: images\nnames:\n  0: tuberia\n')});
+    dl(zip(files),'metalmark-dataset.zip');
+  }catch(e){alert('No se pudo exportar: '+e.message)}
+};
+$('#rst').onclick=()=>{if(confirm(`¿Reiniciar lo aprendido del material "${DB.active}"?`)){delete DB.profiles[DB.active];save();stats()}};
+
+function stats(){
+  const p=P();$('#lsub').textContent='Material activo: '+DB.active;
+  $('#s1').textContent=p.ps.length;$('#s2').textContent=p.rs.length?(med(p.rs)*100).toFixed(1)+'%':'—';$('#s3').textContent=DB.photos;
+  const h=DB.hist.map(x=>100*x.c/Math.max(1,x.n)),l5=h.slice(-5);
+  $('#s4').textContent=l5.length?Math.round(l5.reduce((a,b)=>a+b,0)/l5.length):'—';
+  const mx=Math.max(20,...h.slice(-12));$('#spark').innerHTML=h.slice(-12).map(v=>`<i style="height:${Math.max(4,v/mx*100)}%" title="${Math.round(v)}"></i>`).join('');
+}
+mats();stats();
+</script>
+</body></html>
